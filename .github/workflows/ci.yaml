@@ -52,12 +52,12 @@ jobs:
          DATE=$(date +'%Y-%m-%d')
          REPO_URL="https://github.com/${{ github.repository }}/actions"
         
-         CAPTION="🚀 *New APK Build*%0A\n
+         CAPTION="🚀 *New APK Build*%\n
          📛 *Author:* $AUTHOR%0A\n
          🌿 *Branch:* $BRANCH%0A\n
           🔖 *Version:* $VERSION_NAME%0A\
-         🛠️ *Build Type:* Debug%0A\
-         📅 *Built on:* $DATE%0A\
+         🛠️ *Build Type:* Debug%0A\n
+         📅 *Built on:* $DATE%0A\n
          🔗 [View Workflow]($REPO_URL)"
       
          curl -F document=@"app/build/outputs/apk/debug/app-debug.apk" \
