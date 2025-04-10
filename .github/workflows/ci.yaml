@@ -41,16 +41,18 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-         name: debug-apk
-         path: app/build/outputs/apk/debug/app-debug.apk
+          name: debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
 
       - name: Send APK to Telegram
 
         run: |
-            curl -F document=@"app/build/outputs/apk/debug/app-debug.apk" \
-                 -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-                 -F caption="🚀 New Debug APK Build from GitHub Actions!" \
-                 https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+          export CAPTION="🚀 *New APK Build*\n📦 *App:* MyCoolApp\n🔖 *Version:* 1.0.3\n🛠️ *Build Type:* Debug\n📅 *Built on:* $(date +'%Y-%m-%d')\n🔗 [View on GitHub](https://github.com/${{ github.repository }}/actions)"
+          curl -F document=@"app/build/outputs/apk/debug/app-debug.apk" \
+          -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -F caption="$CAPTION" \
+           -F parse_mode="Markdown" \
+           https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
           
 
 
