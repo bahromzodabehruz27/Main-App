@@ -43,9 +43,7 @@ jobs:
         with:
           name: debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
-
       - name: Send APK to Telegram
-
         run: |
           AUTHOR="${{ github.actor }}"
           BRANCH="${{ github.ref_name }}"
