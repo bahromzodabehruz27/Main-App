@@ -48,6 +48,9 @@ jobs:
         run: |
             curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
                  -F document=@app/build/outputs/apk/debug/app-debug.apk \
-                 -F caption="📦 *${APP_NAME} (Debug Build)*
-                  👤 *Developer:* ${{ github.actor }}\n🌿 *Branch:* ${{ github.ref_name }}\n🏗️ *Build Type:* Debug" \
+                 -F caption="
+                  📦 *${APP_NAME} (Debug Build)*
+                  👤 *Developer:* ${{ github.actor }}
+                  🌿 *Branch:* ${{ github.ref_name }}
+                  🏗️ *Build Type:* Debug" \
                  https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
