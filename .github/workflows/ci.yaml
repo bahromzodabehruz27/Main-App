@@ -46,8 +46,15 @@ jobs:
 
       - name: Send APK to Telegram
         run: |
+          AUTHOR="${{ github.actor }}"
+          BRANCH="${{ github.ref_name }}"
+          VERSION_NAME="1.0.3" # Optional: Replace or dynamically extract
+          DATE=$(date +'%Y-%m-%d')
+          REPO_URL="https://github.com/${{ github.repository }}/actions"
           curl -F document=@"app/build/outputs/apk/debug/app-debug.apk" \
            -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-           -F caption="📦 New build is ready!" \
+           -F caption="📦 New build is ready! \n 📛 *Author:* $AUTHOR%0A\ \n 🌿 *Branch:* $BRANCH%0A\ \n  🔖 *Version:* $VERSION_NAME%0A\ \n
+                         🛠️ *Build Type:* Debug%0A\ \n  📅 *Built on:* $DATE%0A\ \n  🔗 [View Workflow]($REPO_URL)"
+ 
            https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
 
