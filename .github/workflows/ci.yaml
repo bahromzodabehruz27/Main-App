@@ -44,13 +44,24 @@ jobs:
           name: debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Send Debug APK to Telegram
+      - name: Extract Metadata
         run: |
-            curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-                 -F document=@app/build/outputs/apk/debug/app-debug.apk \
-                 -F caption="
-                  📦 ${APP_NAME}
-                  👤 Developer: ${{ github.actor }}
-                  🌿 Branch: ${{ github.ref_name }}
-                  " \
-                 https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+            # Get app name from strings.xml
+            APP_NAME=$(grep -oPm1 "(?<=<string name=\"app_name\">)[^<]+" app/src/main/res/values/strings.xml || echo "MyApp")
+            
+            # Get version name from build.gradle (assuming it's a simple string)
+            VERSION_NAME=$(grep versionName app/build.gradle | head -1 | awk -F\" '{print $2}' || echo "1.0.0")
+            
+            # Get current date
+            BUILD_DATE=$(date +'%Y-%m-%d')
+            
+            echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+            echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+            echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
+
+            - name: Send Debug APK to Telegram
+              run: |
+                curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+                     -F document=@app/build/outputs/apk/debug/app-debug.apk \
+                     -F caption="📦 *${APP_NAME} (v${VERSION_NAME})*\n🌿 *Branch:* ${{ github.ref_name }}\n👤 *Developer:* ${{ github.actor }}\n🏗️ *Build Type:* Debug\n📅 *Date:* ${BUILD_DATE}" \
+                     https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
