@@ -47,17 +47,25 @@ jobs:
       - name: Send APK to Telegram
 
         run: |
-          export CAPTION="🚀 *New APK Build*
-                          📦 *App:* MyCoolApp🔖 
-                           *Version:* 1.0.3🛠️ 
-                           *Build Type:* Debug
-                          📅 *Built on:* $(date +'%Y-%m-%d')
-                         🔗 [View on GitHub](https://github.com/${{ github.repository }}/actions)"
-          curl -F document=@"app/build/outputs/apk/debug/app-debug.apk" \
-          -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-          -F caption="$CAPTION" \
-           -F parse_mode="Markdown" \
-           https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
+          AUTHOR="${{ github.actor }}"
+          BRANCH="${{ github.ref_name }}"
+          VERSION_NAME="1.0.3" # Optional: Replace or dynamically extract
+          DATE=$(date +'%Y-%m-%d')
+          REPO_URL="https://github.com/${{ github.repository }}/actions"
+          
+          CAPTION="🚀 *New APK Build*%0A\
+          📛 *Author:* $AUTHOR%0A\
+          🌿 *Branch:* $BRANCH%0A\
+          🔖 *Version:* $VERSION_NAME%0A\
+          🛠️ *Build Type:* Debug%0A\
+         📅 *Built on:* $DATE%0A\
+         🔗 [View Workflow]($REPO_URL)"
+        
+         curl -F document=@"app/build/outputs/apk/debug/app-debug.apk" \
+         -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+         -F caption="$CAPTION" \
+         -F parse_mode="Markdown" \
+         https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
           
 
 
