@@ -52,5 +52,5 @@ jobs:
                   📦 ${APP_NAME}
                   👤 Developer: ${{ github.actor }}
                   🌿 Branch: ${{ github.ref_name }}
-                  \
+                  " \
                  https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
