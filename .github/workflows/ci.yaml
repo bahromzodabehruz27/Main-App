@@ -55,6 +55,9 @@ jobs:
            -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
            -F caption="📦 New build is ready! \n 📛 *Author:* $AUTHOR%0A\ \n 🌿 *Branch:* $BRANCH%0A\ \n  🔖 *Version:* $VERSION_NAME%0A\ \n
                          🛠️ *Build Type:* Debug%0A\ \n  📅 *Built on:* $DATE%0A\ \n  🔗 [View Workflow]($REPO_URL)"
- 
-           https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
-
+          
+          curl -F document=@"app/build/outputs/apk/debug/app-debug.apk" \
+               -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+               -F caption="$CAPTION" \
+               -F parse_mode="Markdown" \
+               https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
