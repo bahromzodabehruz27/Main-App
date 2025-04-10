@@ -52,7 +52,7 @@ jobs:
          DATE=$(date +'%Y-%m-%d')
          REPO_URL="https://github.com/${{ github.repository }}/actions"
         
-         CAPTION="🚀 *New APK Build*%\n
+         CAPTION="🚀 *New APK Build*
          📛 *Author:* $AUTHOR%0A\n
          🌿 *Branch:* $BRANCH%0A\n
           🔖 *Version:* $VERSION_NAME%0A\
