@@ -56,8 +56,8 @@ jobs:
           👨‍💻 *Author:* $AUTHOR *
           🪴 *Branch:* $BRANCH *
           🔖 *Version:* $VERSION_NAME*
-          🛠️ *Build Type:*Debug*
-          📅 *Built on:* $DATE*
+          🛠️ *Build Type:* Debug *
+          📅 *Built on:* $DATE *
           🔗 [View Workflow]($REPO_URL)"
       
          curl -F document=@"app/build/outputs/apk/debug/app-debug.apk" \
