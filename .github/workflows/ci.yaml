@@ -52,11 +52,11 @@ jobs:
             VERSION_NAME=$(grep versionName app/build.gradle | head -1 | awk -F\" '{print $2}' || echo "1.0.0")
             
             # Get current date
-            BUILD_DATE=$(date +'%Y-%m-%d')
+            BUILD_DATE=$(date +'%d-%m-%Y')
             
             curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
                       -F document=@app/build/outputs/apk/debug/app-debug.apk \
                       -F caption="🌿 Branch: ${{ github.ref_name }} \\n
-             👤 Developer: ${{ github.actor }} 
+             👨‍💻 Developer: ${{ github.actor }} 
              📅 Date: ${BUILD_DATE}" \
                       https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
