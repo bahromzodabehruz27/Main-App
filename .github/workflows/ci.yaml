@@ -11,6 +11,8 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      - name: Set ANDROID_HOME
+        run: echo "ANDROID_HOME=$HOME/Library/Android/sdk" >> $GITHUB_ENV
       - name: Checkout Code
         uses: actions/checkout@v4
       - name: Set up JDK 17
