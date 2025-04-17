@@ -38,4 +38,7 @@ jobs:
           serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
           groups: mytester
           file: app/build/outputs/apk/debug/app-debug.apk
-          releaseNotes: ${{ github.event.head_commit.message }}
+          releaseNotes: |
+             Commit: ${{ github.event.head_commit.message }}
+             Author: ${{ github.event.head_commit.author.name }}
+             Branch: ${{ github.ref_name }}
