@@ -29,6 +29,10 @@ jobs:
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
+      - name: Check secrets (no output)
+        run: |
+          echo "Token: ${{ secrets.FIREBASE_TOKEN }}"
+          echo "App ID: ${{ secrets.FIREBASE_APP_ID }}"
 
       - name: Upload to Firebase App Distribution
         run: |
