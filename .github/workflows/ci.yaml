@@ -28,7 +28,7 @@ jobs:
 
       - name: Rename APK with app name, version, and build time
         run: |
-          APP_NAME="MyApp"  # or parse from strings.xml if needed
+          APP_NAME="MyApp"  
           TIMESTAMP=$(date -u +"%Y%m%d-%H%M")
           NEW_NAME="${APP_NAME}_v${VERSION_NAME}_${VERSION_CODE}_${TIMESTAMP}.apk"
           mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/$NEW_NAME
