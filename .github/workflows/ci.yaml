@@ -36,16 +36,11 @@ jobs:
          echo "versionCode=$VERSION_CODE" >> $GITHUB_OUTPUT
          echo "versionName=$VERSION_NAME" >> $GITHUB_OUTPUT
 
-      - name: Rename APK with app name, version, and time
+      - name: Build APK
         run: |
-         APP_NAME="MyApp"
-         TIMESTAMP=$(date -u +"%Y%m%d-%H%M")
-         NEW_NAME="${APP_NAME}_v${VERSION_NAME}_${TIMESTAMP}.apk"
-
-          BUILD_TYPE=$(echo "${{ github.event.inputs.buildType }}" | tr '[:upper:]' '[:lower:]')
-
-          mv app/build/outputs/apk/$BUILD_TYPE/*.apk app/build/outputs/apk/$BUILD_TYPE/$NEW_NAME
-          echo "NEW_APK_NAME=$NEW_NAME" >> $GITHUB_ENV
+          ./gradlew assemble${{ github.event.inputs.buildType }} \
+            -PversionCode=$VERSION_CODE \
+            -PversionName=$VERSION_NAME
 
 
       - name: Install Firebase CLI
