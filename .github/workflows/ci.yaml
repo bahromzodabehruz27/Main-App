@@ -23,19 +23,25 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Bump version code
-        run: |
-          VERSION_FILE=version.properties
-          OLD_CODE=$(grep VERSION_CODE $VERSION_FILE | cut -d '=' -f2)
-          NEW_CODE=$((OLD_CODE + 1))
-          sed -i.bak "s/VERSION_CODE=.*/VERSION_CODE=$NEW_CODE/" $VERSION_FILE
-          echo "VERSION_CODE=$NEW_CODE" >> $GITHUB_ENV
-
       - name: Grant execute permission to gradlew
         run: chmod +x ./gradlew
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
+      - name: Generate version info
+        id: version
+        run: |
+         VERSION_CODE=$(date +%s)
+         VERSION_NAME="${{ github.event.inputs.buildType }}-${{ github.ref_name }}-$(date +%Y%m%d)"
+         echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+         echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+         echo "versionCode=$VERSION_CODE" >> $GITHUB_OUTPUT
+         echo "versionName=$VERSION_NAME" >> $GITHUB_OUTPUT
+
+      - name: Build APK
+        run: |
+          ./gradlew assemble${{ github.event.inputs.buildType }} \
+            -PversionCode=$VERSION_CODE \
+            -PversionName=$VERSION_NAME
+
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
