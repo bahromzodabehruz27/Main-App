@@ -38,11 +38,14 @@ jobs:
 
       - name: Rename APK with app name, version, and time
         run: |
-         APP_NAME="MyApp"  # Optional: hardcoded or parsed from strings.xml
+         APP_NAME="MyApp"
          TIMESTAMP=$(date -u +"%Y%m%d-%H%M")
          NEW_NAME="${APP_NAME}_v${VERSION_NAME}_${TIMESTAMP}.apk"
-         mv app/build/outputs/apk/${{ github.event.inputs.buildType | toLower }}/*.apk app/build/outputs/apk/${{ github.event.inputs.buildType | toLower }}/$NEW_NAME
-         echo "NEW_APK_NAME=$NEW_NAME" >> $GITHUB_ENV
+
+          BUILD_TYPE=$(echo "${{ github.event.inputs.buildType }}" | tr '[:upper:]' '[:lower:]')
+
+          mv app/build/outputs/apk/$BUILD_TYPE/*.apk app/build/outputs/apk/$BUILD_TYPE/$NEW_NAME
+          echo "NEW_APK_NAME=$NEW_NAME" >> $GITHUB_ENV
 
 
       - name: Install Firebase CLI
