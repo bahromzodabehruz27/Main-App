@@ -26,21 +26,13 @@ jobs:
       - name: Grant execute permission to gradlew
         run: chmod +x ./gradlew
 
-      - name: Generate version info
-        id: version
+      - name: Rename APK with app name, version, and build time
         run: |
-         VERSION_CODE=$(date +%s)
-         VERSION_NAME="${{ github.event.inputs.buildType }}-${{ github.ref_name }}-$(date +%Y%m%d)"
-         echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
-         echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
-         echo "versionCode=$VERSION_CODE" >> $GITHUB_OUTPUT
-         echo "versionName=$VERSION_NAME" >> $GITHUB_OUTPUT
-
-      - name: Build APK
-        run: |
-          ./gradlew assemble${{ github.event.inputs.buildType }} \
-            -PversionCode=$VERSION_CODE \
-            -PversionName=$VERSION_NAME
+          APP_NAME="MyApp"  # or parse from strings.xml if needed
+          TIMESTAMP=$(date -u +"%Y%m%d-%H%M")
+          NEW_NAME="${APP_NAME}_v${VERSION_NAME}_${VERSION_CODE}_${TIMESTAMP}.apk"
+          mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/$NEW_NAME
+          echo "NEW_APK_NAME=$NEW_NAME" >> $GITHUB_ENV
 
 
       - name: Install Firebase CLI
@@ -53,7 +45,7 @@ jobs:
           appId: ${{secrets.FIREBASE_APP_ID}}
           serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
           groups: mytester
-          file: app/build/outputs/apk/debug/app-debug.apk
+          file: app/build/outputs/apk/debug/${{ env.NEW_APK_NAME }}
 
           releaseNotes: |
              Commit: ${{ github.event.head_commit.message }}
