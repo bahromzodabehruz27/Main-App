@@ -30,7 +30,7 @@ jobs:
         id: version
         run: |
          VERSION_CODE=$(date +%s)
-         VERSION_NAME="Main App -$(date +%Y%m%d)"
+         VERSION_NAME="${{ github.event.inputs.buildType }}-${{ github.ref_name }}-$(date +%Y%m%d)"
          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
          echo "versionCode=$VERSION_CODE" >> $GITHUB_OUTPUT
@@ -40,7 +40,7 @@ jobs:
         run: |
           ./gradlew assemble\
             -PversionCode=$VERSION_CODE \
-            -PversionName=$VERSION_NAME
+            -PversionName="Alif"
 
 
       - name: Install Firebase CLI
