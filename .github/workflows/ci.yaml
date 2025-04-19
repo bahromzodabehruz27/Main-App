@@ -35,7 +35,10 @@ jobs:
          echo "versionName=$VERSION_NAME" >> $GITHUB_OUTPUT
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug
+        run: |
+            ./gradlew assembleDebug \
+              -PversionCode=$VERSION_CODE \
+              -PversionName=$VERSION_NAME
 
 
       - name: Install Firebase CLI
