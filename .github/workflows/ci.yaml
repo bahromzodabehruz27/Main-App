@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    name: Build & Distribute Debug APK
+    name: Build & Distribute  APK
     runs-on: ubuntu-latest
 
     steps:
