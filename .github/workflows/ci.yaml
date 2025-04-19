@@ -50,13 +50,10 @@ jobs:
       - name: Upload APK to Firebase App Distribution
         run: |
          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-key.json
-         response=$(firebase appdistribution:distribute app/build/outputs/apk/debug/app-debug.apk \
+         firebase appdistribution:distribute app/build/outputs/apk/debug/app-debug.apk \
           --app "${{ secrets.FIREBASE_APP_ID }}" \
           --release-notes "🔀 Commit: ${{ github.event.head_commit.message || github.event.pull_request.title || 'No commit' }} \n👤 Developer: ${{ github.event.head_commit.author.name || github.event.pull_request.user.login || 'Unknown' }} \n🌿 Branch:${{ github.head_ref || github.ref_name || github.ref }}\n Build Time: ${{ env.BUILD_TIME }}" \
-          --json)
-           echo "$response"
-           RELEASE_URL=$(echo "$response" | jq -r '.releases[0].releaseUrl')
-           echo "release_url=$RELEASE_URL" >> "$GITHUB_OUTPUT"
+         
 
       - name: Send Debug APK to Telegram
         run: |   
