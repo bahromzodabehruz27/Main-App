@@ -26,6 +26,13 @@ jobs:
       - name: Grant execute permission to gradlew
         run: chmod +x ./gradlew
 
+      - name: Extract Merged Branch Name
+        id: extract_branch
+        run: |
+          MERGED_BRANCH=$(git log -1 --pretty=%B | grep -oE 'from [^ ]+' | awk '{print $2}')
+          echo "MERGED_BRANCH=$MERGED_BRANCH" >> $GITHUB_ENV
+          echo "merged_branch=$MERGED_BRANCH" >> $GITHUB_OUTPUT
+
       - name: Generate version info
         id: version
         run: |
