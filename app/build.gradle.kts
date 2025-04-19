@@ -12,8 +12,9 @@ android {
         applicationId = "tj.behruz.mainapp"
         minSdk = 24
         targetSdk = 35
-        versionCode = project.findProperty("versionCode")?.toString()?.toInt() ?: 1
-        versionName = project.findProperty("versionName")?.toString() ?: "1.0"
+        versionCode = 1
+        versionName = "1.1"
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
