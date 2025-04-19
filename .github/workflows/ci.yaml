@@ -38,7 +38,7 @@ jobs:
 
       - name: Build APK
         run: |
-          ./gradlew assemble${{ github.event.inputs.buildType }} \
+          ./gradlew assemble\
             -PversionCode=$VERSION_CODE \
             -PversionName=$VERSION_NAME
 
