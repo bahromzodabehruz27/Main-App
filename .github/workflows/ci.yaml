@@ -26,6 +26,7 @@ jobs:
       - name: Grant execute permission to gradlew
         run: chmod +x ./gradlew
 
+
       - name: Get merged branch name
         id: branch_name
         run: |
