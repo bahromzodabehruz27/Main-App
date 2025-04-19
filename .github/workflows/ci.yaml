@@ -39,7 +39,6 @@ jobs:
       - name: Build APK
         run: |
           ./gradlew assemble\
-            -PversionCode=$VERSION_CODE \
             -PversionName="Alif"
 
 
