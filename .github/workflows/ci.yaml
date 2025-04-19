@@ -48,19 +48,18 @@ jobs:
 
 
       - name: Upload APK to Firebase App Distribution
-        uses: wzieba/Firebase-Distribution-Github-Action@v1
-        with:
-          appId: ${{secrets.FIREBASE_APP_ID}}
-          serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
-          groups: mytester
-          file: app/build/outputs/apk/debug/app-debug.apk
+        run: |
+            response=$(firebase appdistribution:distribute app/build/outputs/apk/debug/app-debug.apk \
+            --app "${{ secrets.FIREBASE_APP_ID }}" \
+            --groups "mytester" \
+            --release-notes "Commit: ${{ github.event.head_commit.message }}\nDeveloper: ${{ github.event.head_commit.author.name }}\nBranch: ${{ github.ref_name }}" \
+            --json)
+          
+          echo "$response"
+          RELEASE_URL=$(echo "$response" | jq -r '.releases[0].releaseUrl')
+          echo "release_url=$RELEASE_URL" >> "$GITHUB_OUTPUT"
 
-          releaseNotes: |
-             Commit: ${{ github.event.head_commit.message }}
-             Developer: ${{ github.event.head_commit.author.name }}
-             Branch: ${{ github.ref_name }}
-            
-
+       
 
       - name: Send Debug APK to Telegram
         run: |   
