@@ -57,8 +57,17 @@ jobs:
 
           releaseNotes: |
              Commit: ${{ github.event.head_commit.message }}
-             Author: ${{ github.event.head_commit.author.name }}
+             Developer: ${{ github.event.head_commit.author.name }}
              Branch: ${{ github.ref_name }}
             
 
 
+      - name: Send Debug APK to Telegram
+        run: |  
+          curl -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+                    -F caption=" 
+           📦  Alif Mobi ($VERSION_CODE)
+           🔀  Branch: ${{ github.ref_name }} 
+           👨‍💻  Developer: ${{ github.actor }} 
+           📅  Date: ${BUILD_DATE}" \
+                    https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument
