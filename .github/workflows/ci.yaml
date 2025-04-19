@@ -38,9 +38,9 @@ jobs:
           echo "versionName=$VERSION_NAME" >> $GITHUB_OUTPUT
 
 
-      - name: Build Debug APK
+      - name: Clean & Build Debug APK
         run: |
-          ./gradlew assembleDebug \
+         ./gradlew clean assembleDebug \
             -PversionCode=$VERSION_CODE \
             -PversionName=$VERSION_NAME
 
