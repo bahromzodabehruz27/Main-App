@@ -27,12 +27,20 @@ jobs:
         run: chmod +x ./gradlew
 
 
-      - name: Get merged branch name
-        id: branch_name
+
+      - name: Get merged branch name if it's a merge commit
+        id: get_branch
         run: |
-          MERGED_BRANCH=$(git log -1 --pretty=%B | grep -oP '(?<=from ).*(?= into)')
-          echo "MERGED_BRANCH=$MERGED_BRANCH"
-          echo "merged_branch=$MERGED_BRANCH" >> $GITHUB_OUTPUT
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Commit message: $COMMIT_MSG"
+          
+          if [[ "$COMMIT_MSG" == Merge\ pull\ request* ]]; then
+            MERGED_BRANCH=$(echo "$COMMIT_MSG" | grep -oP '(?<=from ).*(?= into)')
+            echo "Merged branch: $MERGED_BRANCH"
+            echo "merged_branch=$MERGED_BRANCH" >> $GITHUB_OUTPUT
+          else
+            echo "Not a merge commit, skipping."
+            echo "merged_branch=unknown" >> $GITHUB_OUTPUT
 
       - name: Generate version info
         id: version
