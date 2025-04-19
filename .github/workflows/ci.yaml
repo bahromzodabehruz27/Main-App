@@ -1,10 +1,12 @@
 name: Android CI/CD with Firebase
+
 on:
   push:
     branches: [main]
+
 jobs:
   build:
-    name: Build & Distribute  APK
+    name: Build & Distribute Debug APK
     runs-on: ubuntu-latest
 
     steps:
@@ -27,26 +29,23 @@ jobs:
       - name: Generate version info
         id: version
         run: |
-          DATE=$(date +%y%m%d)
-          TIME=$(date +%H%M)
-          VERSION_CODE="${DATE}${TIME}"
-          VERSION_NAME="build-${DATE}-${TIME}"
-          
-          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
-          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
-          echo "versionCode=$VERSION_CODE" >> $GITHUB_OUTPUT
-          echo "versionName=$VERSION_NAME" >> $GITHUB_OUTPUT
+         VERSION_CODE=$(date +%s)
+         VERSION_NAME="${{ github.event.inputs.buildType }}-${{ github.ref_name }}-$(date +%Y%m%d)"
+         echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+         echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+         echo "versionCode=$VERSION_CODE" >> $GITHUB_OUTPUT
+         echo "versionName=$VERSION_NAME" >> $GITHUB_OUTPUT
 
-
-      - name: Clean & Build Debug APK
+      - name: Build APK
         run: |
-         ./gradlew clean assembleDebug \
+          ./gradlew assemble${{ github.event.inputs.buildType }} \
             -PversionCode=$VERSION_CODE \
             -PversionName=$VERSION_NAME
 
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
+
 
       - name: Upload APK to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
@@ -55,6 +54,7 @@ jobs:
           serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
           groups: mytester
           file: app/build/outputs/apk/debug/app-debug.apk
+
           releaseNotes: |
              Commit: ${{ github.event.head_commit.message }}
              Author: ${{ github.event.head_commit.author.name }}
