@@ -27,8 +27,6 @@ jobs:
       - name: Grant execute permission to gradlew
         run: chmod +x ./gradlew
 
-
-
       - name: Generate version info
         id: version
         run: |
