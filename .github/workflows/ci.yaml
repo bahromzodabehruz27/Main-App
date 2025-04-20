@@ -60,7 +60,7 @@ jobs:
              PR: ${{ github.event.pull_request.title }}
              Commit: ${{ github.event.head_commit.message }}
              Author: ${{ github.event.pull_request.user.login }}
-             Branch: ${{ github.ref_name }}
+             Branch: ${{ github.head_ref }}
             
 
       - name: Send Debug APK to Telegram
