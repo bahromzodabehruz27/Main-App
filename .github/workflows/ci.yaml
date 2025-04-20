@@ -39,7 +39,7 @@ jobs:
 
       - name: Build APK
         run: |
-          ./gradlew assemble\
+          ./gradlew assembleDebug\
             -PversionCode=$VERSION_CODE \
             -PversionName="Alif MOBI"
 
