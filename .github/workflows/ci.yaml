@@ -1,6 +1,8 @@
 name: Android CI/CD with Firebase
 
 on:
+  push:
+    branches: [ main ]
   pull_request:
     types: [ closed ]
     branches: [ main ]
@@ -26,6 +28,13 @@ jobs:
 
       - name: Grant execute permission to gradlew
         run: chmod +x ./gradlew
+
+      - name: Get versionName from build.gradle
+        id: get_version
+        run: |
+         version=$(grep versionName app/build.gradle | awk '{ print $2 }' | tr -d '"')
+         echo "VERSION_NAME=$version" >> $GITHUB_ENV
+
 
       - name: Generate version info
         id: version
