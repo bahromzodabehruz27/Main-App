@@ -12,8 +12,8 @@ android {
         applicationId = "tj.behruz.mainapp"
         minSdk = 24
         targetSdk = 35
-        versionCode =  1
-        versionName = "1.0"
+        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
+        versionName = project.findProperty("versionName") as String? ?: "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -32,11 +32,6 @@ android {
     }
     buildFeatures {
         compose = true
-    }
-}
-gradle.projectsEvaluated {
-    if (project.hasProperty("fakeVersionCode")) {
-        android.defaultConfig.versionCode = project.fakeVersionCode.toInteger()
     }
 }
 
