@@ -1,5 +1,4 @@
 name: Android CI/CD with Firebase
-
 on:
   push:
     branches: [ main ]
