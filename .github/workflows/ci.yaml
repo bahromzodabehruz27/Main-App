@@ -62,7 +62,6 @@ jobs:
             -PversionCode=$VERSION_CODE \
             -PversionName="Alif MOBI"
 
-
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
