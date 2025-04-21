@@ -1,8 +1,6 @@
 name: Android CI/CD with Firebase
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     types: [ closed ]
     branches: [ main ]
@@ -50,15 +48,6 @@ jobs:
         id: extract_task
         run: |
           BODY="${{ github.event.pull_request.body }}"
-          
-          # Extract task name (everything before the link)
-          TASK_NAME=$(echo "$BODY" | sed -E 's#(http.*)##' | xargs)
-
-          # Extract link (first occurrence of http/https URL)
-          TASK_LINK=$(echo "$BODY" | grep -Eo 'https?://[^ ]+')
-
-          echo "TASK_NAME=$TASK_NAME" >> $GITHUB_ENV
-          echo "TASK_LINK=$TASK_LINK" >> $GITHUB_ENV
 
       - name: Build APK
         run: |
@@ -80,8 +69,7 @@ jobs:
           file: app/build/outputs/apk/debug/app-debug.apk
 
           releaseNotes: |
-            🔧 *Task:* $TASK_NAME
-            🔗 *Link:* $TASK_LINK
+            🔧 *Task:* $BODY
             PR: ${{ github.event.pull_request.title }}
             Commit: ${{ github.event.head_commit.message }}
             Author: ${{ github.event.head_commit.author.name }}
@@ -98,8 +86,7 @@ jobs:
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
             -d text=" 
-             🔧 *Task:* $TASK_NAME
-             🔗 *Link:* $TASK_LINK
+               🔧 *Task:* $BODY
              PR: ${{ github.event.pull_request.body }}
              Commit: ${{ github.event.head_commit.message }}
              Author: ${{ github.event.head_commit.author.name }}
