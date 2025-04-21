@@ -34,6 +34,11 @@ android {
         compose = true
     }
 }
+gradle.projectsEvaluated {
+    if (project.hasProperty("fakeVersionCode")) {
+        android.defaultConfig.versionCode = project.fakeVersionCode.toInteger()
+    }
+}
 
 dependencies {
 
