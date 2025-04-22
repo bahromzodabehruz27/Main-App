@@ -29,8 +29,8 @@ jobs:
       - name: Get versionName from build.gradle
         id: get_version
         run: |
-         version=$(grep versionName app/build.gradle | awk '{ print $2 }' | tr -d '"')
-         echo "VERSION_NAME=$version" >> $GITHUB_ENV
+          version=$(grep versionName app/build.gradle | awk '{ print $2 }' | tr -d '"')
+          echo "VERSION_NAME=$version" >> $GITHUB_ENV
 
 
       - name: Generate version info
@@ -53,35 +53,20 @@ jobs:
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-
-      - name: Extract Task Info from PR Description
-
-        id: extract_body
-        run: |
-              BODY="${{ github.event.pull_request.body }}"
-              # Extract task name (everything before the link)
-              task_name=$(echo "$BODY" | sed -E 's#(http.*)##' | xargs)
-              
-              # Extract link (first occurrence of http/https URL)
-              task_link=$(echo "$BODY" | grep -Eo 'https?://[^ ]+')
-              
-              echo "TASK_NAME=task_name" >> $GITHUB_ENV
-              echo "TASK_LINK=task_link" >> $GITHUB_ENV
-
       - name: Upload APK to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
-              appId: ${{secrets.FIREBASE_APP_ID}}
-              serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
-              groups: mytester
-              file: app/build/outputs/apk/debug/app-debug.apk
+          appId: ${{secrets.FIREBASE_APP_ID}}
+          serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
+          groups: mytester
+          file: app/build/outputs/apk/debug/app-debug.apk
 
-              releaseNotes: |
-                Task: ${{ github.event.pull_request.head.ref }}
-                Commit: ${{ github.event.head_commit.message }}
-                Developer: ${{ github.event.head_commit.author.name }}
-              
-                
+          releaseNotes: |
+            Task: ${{ github.event.pull_request.head.ref }}
+            Commit: ${{ github.event.head_commit.message }}
+            Developer: ${{ github.event.head_commit.author.name }}
+
+
 
       - name: Send Debug APK to Telegram
         run: |
