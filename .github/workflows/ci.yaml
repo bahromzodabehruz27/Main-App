@@ -82,6 +82,20 @@ jobs:
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
+
+      - name: Extract Task Info from PR Description
+        id: extract_task
+        run: |
+              BODY="${{ github.event.pull_request.body }}"
+              # Extract task name (everything before the link)
+              TASK_NAME=$(echo "$BODY" | sed -E 's#(http.*)##' | xargs)
+              
+              # Extract link (first occurrence of http/https URL)
+              TASK_LINK=$(echo "$BODY" | grep -Eo 'https?://[^ ]+')
+              
+              echo "TASK_NAME=$TASK_NAME" >> $GITHUB_ENV
+              echo "TASK_LINK=$TASK_LINK" >> $GITHUB_ENV
+
       - name: Upload APK to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
