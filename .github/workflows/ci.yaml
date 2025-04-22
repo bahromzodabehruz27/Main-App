@@ -84,17 +84,18 @@ jobs:
 
 
       - name: Extract Task Info from PR Description
-        id: extract_task
+
+        id: extract_body
         run: |
               BODY="${{ github.event.pull_request.body }}"
               # Extract task name (everything before the link)
-              TASK_NAME=$(echo "$BODY" | sed -E 's#(http.*)##' | xargs)
+              task_name=$(echo "$BODY" | sed -E 's#(http.*)##' | xargs)
               
               # Extract link (first occurrence of http/https URL)
-              TASK_LINK=$(echo "$BODY" | grep -Eo 'https?://[^ ]+')
+              task_link=$(echo "$BODY" | grep -Eo 'https?://[^ ]+')
               
-              echo "TASK_NAME=$TASK_NAME" >> $GITHUB_ENV
-              echo "TASK_LINK=$TASK_LINK" >> $GITHUB_ENV
+              echo "TASK_NAME=task_name" >> $GITHUB_ENV
+              echo "TASK_LINK=task_link" >> $GITHUB_ENV
 
       - name: Upload APK to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
@@ -105,8 +106,8 @@ jobs:
               file: app/build/outputs/apk/debug/app-debug.apk
 
               releaseNotes: |
-                Task: "${{ steps.extract_task.outputs.task_name }}"
-                Link: "${{ steps.extract_task.outputs.task_link }}"
+                Task: "$task_name"
+                Link: "$task_link"
                 PR: ${{ github.event.pull_request.title }}
                 Commit: ${{ github.event.head_commit.message }}
                 Author: ${{ github.event.head_commit.author.name }}
