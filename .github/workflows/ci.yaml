@@ -63,7 +63,7 @@ jobs:
 
           releaseNotes: |
             Task: ${{ github.event.pull_request.head.ref }}
-            Commit: ${{ github.event.head_commit.message }}
+            Commit: ${{ github.event.pull_request.head.commit.message }}
             Developer: ${{ github.event.pull_request.user.login  }}
 
       - name: Send Debug APK to Telegram
@@ -76,5 +76,5 @@ jobs:
              Task: ${{ github.event.pull_request.head.ref }}
              Link: ${{ github.event.pull_request.body }}
              Author: ${{ github.event.pull_request.user.login  }}
-             Branch: ${{ github.ref_name }}" \
+             Commit: ${{ github.event.pull_request.head.commit.message }}" \
             -d parse_mode=Markdown
