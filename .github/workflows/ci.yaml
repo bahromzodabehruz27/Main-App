@@ -67,7 +67,6 @@ jobs:
             Developer: ${{ github.event.head_commit.author.name }}
 
 
-
       - name: Send Debug APK to Telegram
         run: |
           MESSAGE="✅ APK successfully uploaded to Firebase!\n\n 📦  Alif Mobi ($VERSION_CODE)\nn  🔀  Branch: ${{ github.ref_name }} \`\n✍️ *Commit:* _${{ github.event.head_commit.message }}_\n👤
