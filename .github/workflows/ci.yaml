@@ -70,5 +70,5 @@ jobs:
         run: |
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d text="🔀 Task: ${{ github.event.pull_request.head.ref }}\n🔗 Link: ${{ github.event.pull_request.body }}\n👨‍💻 Developer: ${{ github.event.pull_request.user.login }}" \
+            -d text="🔀 Task: ${{ github.event.pull_request.head.ref }}%0A🔗 Link: ${{ github.event.pull_request.body }}%0A👨‍💻 Developer: ${{ github.event.pull_request.user.login }}" \
             -d parse_mode=Markdown
