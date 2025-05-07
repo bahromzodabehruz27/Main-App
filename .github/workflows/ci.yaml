@@ -72,6 +72,7 @@ jobs:
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
             -d text="
              🔀 Task: ${{ github.event.pull_request.head.ref }}
-             🔗 Link: ${{ github.event.pull_request.body }}
-             👨‍💻 Developer: ${{ github.event.pull_request.user.login  }}" \
+            🔗 Link: ${{ github.event.pull_request.body }}
+            👨‍💻 Developer: ${{ github.event.pull_request.user.login  }}" \
+
             -d parse_mode=Markdown
