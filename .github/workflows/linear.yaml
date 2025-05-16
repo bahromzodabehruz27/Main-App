@@ -23,7 +23,7 @@ jobs:
           else
             echo "No Linear issue ID found"
             exit 0
-          fi
+
       - name: Output Issue ID
         id: extract
         run: |
