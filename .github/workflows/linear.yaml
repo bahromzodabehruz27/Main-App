@@ -24,7 +24,18 @@ jobs:
             echo "No Linear issue ID found"
             exit 0
           fi
+      - name: Output Issue ID
+        id: extract
+        run: |
+              echo "PR_TITLE=${{ github.event.pull_request.title }}" >> $GITHUB_ENV
+              if [[ "${{ github.event.pull_request.title }}" =~ ([A-Z]+-[0-9]+) ]]; then
+                echo "issue_id=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+              else
+                echo "issue_id=not_found" >> $GITHUB_OUTPUT
+              fi
 
+          - name: Show Issue ID
+            run: echo "Issue ID is: ${{ steps.extract.outputs.issue_id }}"
       - name: Update Linear Status
         if: env.ISSUE_ID != ''
         run: |
