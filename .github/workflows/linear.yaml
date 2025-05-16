@@ -1,0 +1,45 @@
+name: Update Linear Ticket
+
+on:
+  pull_request:
+    types: [opened, reopened, closed]
+
+jobs:
+  update-linear:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Extract PR Title
+        id: extract
+        run: |
+          echo "PR_TITLE=${{ github.event.pull_request.title }}" >> $GITHUB_ENV
+
+      - name: Extract Linear Issue ID
+        id: parse
+        run: |
+          if [[ "$PR_TITLE" =~ ([A-Z]+-[0-9]+) ]]; then
+            echo "Found Linear Issue ID: ${BASH_REMATCH[1]}"
+            echo "ISSUE_ID=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+          else
+            echo "No Linear issue ID found"
+            exit 0
+          fi
+
+      - name: Update Linear Status
+        if: env.ISSUE_ID != ''
+        run: |
+          STATUS_ID_REVIEW="your_review_status_id" # Replace with actual ID
+          STATUS_ID_DONE="your_done_status_id"     # Replace with actual ID
+
+          if [[ "${{ github.event.action }}" == "closed" && "${{ github.event.pull_request.merged }}" == "true" ]]; then
+            STATUS_ID=$STATUS_ID_DONE
+          else
+            STATUS_ID=$STATUS_ID_REVIEW
+          fi
+
+          curl -X POST https://api.linear.app/graphql \
+            -H "Authorization: ${{ secrets.LINEAR_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "query": "mutation UpdateIssue { issueUpdate(id: \"'$ISSUE_ID'\", input: { stateId: \"'$STATUS_ID'\" }) { success } }"
+            }'
