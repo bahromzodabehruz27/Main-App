@@ -36,7 +36,7 @@ jobs:
         run: |
           curl -X POST https://api.linear.app/graphql \
             -H "Content-Type: application/json" \
-            -H "Authorization: lin_api_NARDLHsCe9m6hY7zeD979BGp6GojciHUSvZA1xBk}" \
+            -H "Authorization: ${{ secrets.LINEAR_API_KEY }}" \
             -d '{
               "query": "mutation { issueUpdate(input: { id: \"'$ISSUE_ID'\", stateId: \"'$STATE_ID'\" }) { success } }"
             }'
