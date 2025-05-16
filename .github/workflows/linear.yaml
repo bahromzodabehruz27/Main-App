@@ -22,6 +22,7 @@ jobs:
           else
             echo "No Linear issue ID found"
             exit 0
+          fi
         shell: bash
 
       - name: Update Linear Status
