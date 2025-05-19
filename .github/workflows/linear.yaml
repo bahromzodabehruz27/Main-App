@@ -61,10 +61,11 @@ jobs:
           echo "🔄 Setting new state: $NEW_STATE"
 
           echo "📡 Sending GraphQL query to get internal issue ID"
-          QUERY=$(jq -nc --arg key "$ISSUE_ID" \'{ query: "query { issue(key: \"" + $key + "\") { id title team { id name } } }" }')
-        
+          QUERY=$(jq -nc --arg key "$ISSUE_ID" \
+            '{query: "query { issue(key: \"" + $key + "\") { id title team { id name } } }"}')
+
           RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
-            -H "Authorization: $LINEAR_KEY" \
+            -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
             -d "$QUERY")
 
@@ -75,7 +76,7 @@ jobs:
           TEAM_ID=$(echo "$RESPONSE" | jq -r '.data.issue.team.id')
           TEAM_NAME=$(echo "$RESPONSE" | jq -r '.data.issue.team.name')
 
-          if [ "$ISSUE_INTERNAL_ID" == "null" ]; then
+          if [ "$ISSUE_INTERNAL_ID" == "null" ] || [ -z "$ISSUE_INTERNAL_ID" ]; then
             echo "❌ Failed to extract internal issue ID. Full response:"
             echo "$RESPONSE"
             exit 1
@@ -85,10 +86,10 @@ jobs:
           echo "✅ Found TEAM_ID: $TEAM_ID ($TEAM_NAME)"
 
           echo "📡 Fetching workflow states for team: $TEAM_ID"
-         WORKFLOW_QUERY=$(jq -nc --arg teamId "$TEAM_ID" \
-          '{ query: "query { workflowStates(teamId: \"" + $teamId + "\") { id name } }" }')
-  
-         WORKFLOW_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
+          WORKFLOW_QUERY=$(jq -nc --arg teamId "$TEAM_ID" \
+            '{query: "query { workflowStates(teamId: \"" + $teamId + "\") { id name } }"}')
+
+          WORKFLOW_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
             -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
             -d "$WORKFLOW_QUERY")
@@ -108,14 +109,14 @@ jobs:
 
           echo "📦 Preparing mutation to update issue state"
           MUTATION=$(jq -nc --arg id "$ISSUE_INTERNAL_ID" --arg stateId "$STATE_ID" \
-            '{ query: "mutation { issueUpdate(id: \"" + $id + "\" input: { stateId: \"" + $stateId + "\" }) { success } }" }')
+            '{query: "mutation { issueUpdate(id: \"" + $id + "\" input: { stateId: \"" + $stateId + "\" }) { success } }"}')
 
           echo "🔧 Mutation payload:"
           echo "$MUTATION" | jq .
 
           echo "📡 Sending mutation to Linear..."
           UPDATE_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
-            -H "Authorization: $LINEAR_KEY" \
+            -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
             -d "$MUTATION")
 
