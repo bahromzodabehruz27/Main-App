@@ -1,5 +1,4 @@
 name: Update Linear Ticket Status
-
 on:
   pull_request:
     types: [opened, reopened, closed]
