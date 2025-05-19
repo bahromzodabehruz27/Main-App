@@ -85,23 +85,23 @@ jobs:
           echo "✅ Found TEAM_ID: $TEAM_ID ($TEAM_NAME)"
 
           echo "📡 Fetching workflow states for team: $TEAM_ID"
-          WORKFLOW_QUERY=$(jq -n --arg teamId "$TEAM_ID" \
-            '{query: "query { workflowStates(teamId: \"" + $teamId + "\") { id name } }"}')
-
-          WORKFLOW_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
-            -H "Authorization: $LINEAR_API_KEY" \
-            -H "Content-Type: application/json" \
-            -d "$WORKFLOW_QUERY")
-
+          QUERY="query { team(id: \"$TEAM_ID\") { states { id name } } }"
+          WORKFLOW_QUERY=$(jq -n --arg query "$QUERY" '{query: $query}')
+  
+         WORKFLOW_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
+          -H "Authorization: $LINEAR_API_KEY" \
+          -H "Content-Type: application/json" \
+          -d "$WORKFLOW_QUERY")
+  
           echo "📥 Raw workflow state response:"
           echo "$WORKFLOW_RESPONSE" | jq .
-
-          STATE_ID=$(echo "$WORKFLOW_RESPONSE" | jq -r --arg name "$NEW_STATE" '.data.workflowStates[] | select(.name == $name) | .id')
-
+  
+          STATE_ID=$(echo "$WORKFLOW_RESPONSE" | jq -r --arg name "$NEW_STATE" '.data.team.states[] | select(.name == $name) | .id')
+  
           if [ -z "$STATE_ID" ]; then
-            echo "❌ State \"$NEW_STATE\" not found in workflow states:"
-            echo "$WORKFLOW_RESPONSE" | jq '.data.workflowStates[] | {id, name}'
-            exit 1
+          echo "❌ State \"$NEW_STATE\" not found in workflow states:"
+          echo "$WORKFLOW_RESPONSE" | jq '.data.team.states[] | {id, name}'
+          exit 1
           fi
 
           echo "✅ Found STATE_ID: $STATE_ID for state '$NEW_STATE'"
