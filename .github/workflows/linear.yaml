@@ -1,5 +1,4 @@
 name: Sync Linear Ticket Status
-
 on:
   push:
     branches-ignore: [main]
