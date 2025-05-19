@@ -61,7 +61,7 @@ jobs:
           echo "🔄 Setting new state: $NEW_STATE"
 
           echo "📡 Sending GraphQL query to get internal issue ID"
-          QUERY=$(jq -n \'{query: "query { issue(id: \"ALI-19\") { id title team { id name } } }"}')
+          QUERY=$(jq -n '{query: "query { issue(id: \"ALI-19\") { id title team { id name } } }"}')
 
           RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
             -H "Authorization: $LINEAR_API_KEY" \
