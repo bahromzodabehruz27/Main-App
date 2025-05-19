@@ -1,133 +1,138 @@
-name: Update Linear Ticket Status
+name: Sync Linear Ticket Status
+
 on:
+  push:
+    branches-ignore: [main]
   pull_request:
-    types: [opened, reopened, closed]
+    types: [opened, closed]
+  pull_request_review:
+    types: [submitted]
 
 jobs:
   update-linear:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Print raw branch and PR info
+      - name: Extract event data
         run: |
-          echo "HEAD_REF: ${{ github.head_ref }}"
-          echo "PR_TITLE: ${{ github.event.pull_request.title }}"
-          echo "EVENT: ${{ github.event.action }}"
-          echo "REF: ${{ github.ref }}"
+          echo "EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
+          echo "ACTION=${{ github.event.action }}" >> $GITHUB_ENV
+          echo "HEAD_REF=${{ github.head_ref || github.ref_name }}" >> $GITHUB_ENV
+          echo "IS_MERGED=${{ github.event.pull_request.merged || false }}" >> $GITHUB_ENV
+          echo "REVIEW_STATE=${{ github.event.review.state || '' }}" >> $GITHUB_ENV
 
       - name: Extract ISSUE_ID from branch name
         id: extract_id
         run: |
-          BRANCH_NAME="${{ github.head_ref }}"
-          echo "🔍 Extracting ISSUE_ID from branch: $BRANCH_NAME"
+          BRANCH="${{ env.HEAD_REF }}"
+          echo "🔍 Branch: $BRANCH"
 
-          if [[ "$BRANCH_NAME" =~ ([A-Z]+-[0-9]+) ]]; then
+          if [[ "$BRANCH" =~ ([A-Z]+-[0-9]+) ]]; then
             ISSUE_ID="${BASH_REMATCH[1]}"
             echo "✅ Found ISSUE_ID: $ISSUE_ID"
             echo "ISSUE_ID=$ISSUE_ID" >> $GITHUB_ENV
           else
-            echo "❌ No ISSUE_ID found in branch name"
+            echo "❌ No ISSUE_ID in branch"
             exit 0
           fi
 
-      - name: Debug extracted values
+      - name: Decide NEW_STATE
+        id: state
         run: |
-          echo "📦 ISSUE_ID: ${{ env.ISSUE_ID }}"
-          echo "📦 PR_EVENT: ${{ github.event.action }}"
+          STATE=""
+          case "${{ env.EVENT_NAME }}" in
+            "push")
+              STATE="In Progress"
+              ;;
+            "pull_request")
+              if [ "${{ env.ACTION }}" == "opened" ]; then
+                STATE="In Review"
+              elif [ "${{ env.ACTION }}" == "closed" ] && [ "${{ env.IS_MERGED }}" == "true" ]; then
+                STATE="Ready to Test"
+              fi
+              ;;
+            "pull_request_review")
+              if [ "${{ env.REVIEW_STATE }}" == "changes_requested" ]; then
+                STATE="In Rework"
+              fi
+              ;;
+          esac
 
-      - name: Update Linear Ticket Status
+          if [ -z "$STATE" ]; then
+            echo "ℹ️ No matching state to apply"
+            exit 0
+          fi
+
+          echo "🎯 Target Linear State: $STATE"
+          echo "NEW_STATE=$STATE" >> $GITHUB_ENV
+
+      - name: Fetch internal Linear issue ID
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
-          ISSUE_ID: ${{ env.ISSUE_ID }}
-          PR_EVENT: ${{ github.event.action }}
         run: |
-          echo "🚀 Starting Linear update for $ISSUE_ID based on event $PR_EVENT"
+          QUERY="query { issue(id: \"${ISSUE_ID}\") { id title team { id name } } }"
+          REQUEST=$(jq -n --arg query "$QUERY" '{query: $query}')
 
-          if [ -z "$ISSUE_ID" ]; then
-            echo "⚠️ ISSUE_ID is empty, exiting"
-            exit 0
-          fi
-
-          if [ "$PR_EVENT" == "opened" ] || [ "$PR_EVENT" == "reopened" ]; then
-            NEW_STATE="In Review"
-          elif [ "$PR_EVENT" == "closed" ]; then
-            NEW_STATE="Done"
-          else
-            echo "⚠️ Unsupported PR event: $PR_EVENT"
-            exit 0
-          fi
-
-          echo "🔄 Setting new state: $NEW_STATE"
-
-          echo "📡 Sending GraphQL query to get internal issue ID"
-          QUERY="query { issue(id: \"$ISSUE_ID\") { id title team { id name } } }"
-          QUERY=$(jq -n --arg query "$QUERY" '{query: $query}')
-          
           RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
             -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "$QUERY")
+            -d "$REQUEST")
 
-          echo "📥 Raw issue response:"
           echo "$RESPONSE" | jq .
 
           ISSUE_INTERNAL_ID=$(echo "$RESPONSE" | jq -r '.data.issue.id')
           TEAM_ID=$(echo "$RESPONSE" | jq -r '.data.issue.team.id')
-          TEAM_NAME=$(echo "$RESPONSE" | jq -r '.data.issue.team.name')
 
-          if [ "$ISSUE_INTERNAL_ID" == "null" ] || [ -z "$ISSUE_INTERNAL_ID" ]; then
-            echo "❌ Failed to extract internal issue ID. Full response:"
-            echo "$RESPONSE"
+          if [ -z "$ISSUE_INTERNAL_ID" ] || [ "$ISSUE_INTERNAL_ID" == "null" ]; then
+            echo "❌ Cannot find internal issue ID"
             exit 1
           fi
 
-          echo "✅ Found ISSUE_INTERNAL_ID: $ISSUE_INTERNAL_ID"
-          echo "✅ Found TEAM_ID: $TEAM_ID ($TEAM_NAME)"
+          echo "ISSUE_INTERNAL_ID=$ISSUE_INTERNAL_ID" >> $GITHUB_ENV
+          echo "TEAM_ID=$TEAM_ID" >> $GITHUB_ENV
 
-          echo "📡 Fetching workflow states for team: $TEAM_ID"
-          QUERY="query { team(id: \"$TEAM_ID\") { states { nodes { id name } } } }"
-          WORKFLOW_QUERY=$(jq -n --arg query "$QUERY" '{query: $query}')
-          
-          WORKFLOW_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
+      - name: Get Workflow State ID
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+        run: |
+          QUERY="query { team(id: \"${TEAM_ID}\") { states { nodes { id name } } } }"
+          REQUEST=$(jq -n --arg query "$QUERY" '{query: $query}')
+
+          RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
             -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "$WORKFLOW_QUERY")
-          
-          echo "📥 Raw workflow state response:"
-          echo "$WORKFLOW_RESPONSE" | jq .
-          
-          STATE_ID=$(echo "$WORKFLOW_RESPONSE" | jq -r --arg name "$NEW_STATE" '.data.team.states.nodes[] | select(.name == $name) | .id')
-          
+            -d "$REQUEST")
+
+          echo "$RESPONSE" | jq .
+
+          STATE_ID=$(echo "$RESPONSE" | jq -r --arg name "${NEW_STATE}" '.data.team.states.nodes[] | select(.name == $name) | .id')
+
           if [ -z "$STATE_ID" ]; then
-          echo "❌ State \"$NEW_STATE\" not found in workflow states:"
-          echo "$WORKFLOW_RESPONSE" | jq '.data.team.states.nodes[] | {id, name}'
-          exit 1
+            echo "❌ State '${NEW_STATE}' not found."
+            echo "$RESPONSE" | jq '.data.team.states.nodes[] | {id, name}'
+            exit 1
           fi
 
-          echo "✅ Found STATE_ID: $STATE_ID for state '$NEW_STATE'"
+          echo "STATE_ID=$STATE_ID" >> $GITHUB_ENV
 
-          echo "✅ Found STATE_ID: $STATE_ID for state '$NEW_STATE'"
+      - name: Update Linear Issue State
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+        run: |
+          MUTATION="mutation { issueUpdate(id: \"${ISSUE_INTERNAL_ID}\" input: { stateId: \"${STATE_ID}\" }) { success } }"
+          REQUEST=$(jq -n --arg query "$MUTATION" '{query: $query}')
 
-          echo "📦 Preparing mutation to update issue state"
-
-          MUTATION_QUERY="mutation { issueUpdate(id: \"$ISSUE_INTERNAL_ID\" input: { stateId: \"$STATE_ID\" }) { success            } }"
-          MUTATION=$(jq -n --arg query "$MUTATION_QUERY" '{query: $query}')
-          
-          echo "🔧 Mutation payload:"
-          echo "$MUTATION" | jq .
-
-          echo "📡 Sending mutation to Linear..."
-          UPDATE_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
+          RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
             -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "$MUTATION")
+            -d "$REQUEST")
 
-          echo "📥 Update response:"
-          echo "$UPDATE_RESPONSE" | jq .
-          SUCCESS=$(echo "$UPDATE_RESPONSE" | jq -r '.data.issueUpdate.success')
-          if [ "$SUCCESS" = "true" ]; then
-            echo "✅ Issue status successfully updated"
+          echo "$RESPONSE" | jq .
+
+          SUCCESS=$(echo "$RESPONSE" | jq -r '.data.issueUpdate.success')
+          if [ "$SUCCESS" == "true" ]; then
+            echo "✅ Status updated to '${NEW_STATE}'"
           else
-            echo "❌ Failed to update issue status"
+            echo "❌ Failed to update status"
             exit 1
           fi
