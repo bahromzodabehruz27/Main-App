@@ -109,11 +109,12 @@ jobs:
           echo "✅ Found STATE_ID: $STATE_ID for state '$NEW_STATE'"
 
           echo "📦 Preparing mutation to update issue state"
-          MUTATION=$(jq -n --arg id "$ISSUE_INTERNAL_ID" --arg stateId "$STATE_ID" \
-            '{query: "mutation { issueUpdate(id: \"" + $id + "\" input: { stateId: \"" + $stateId + "\" }) { success } }"}')
 
-          echo "🔧 Mutation payload:"
-          echo "$MUTATION" | jq .
+         MUTATION_QUERY="mutation { issueUpdate(id: \"$ISSUE_INTERNAL_ID\" input: { stateId: \"$STATE_ID\" }) { success } }"
+         MUTATION=$(jq -n --arg query "$MUTATION_QUERY" '{query: $query}')
+          
+         echo "🔧 Mutation payload:"
+         echo "$MUTATION" | jq .
 
           echo "📡 Sending mutation to Linear..."
           UPDATE_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
