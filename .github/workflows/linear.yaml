@@ -18,6 +18,10 @@ jobs:
             echo "No Linear issue ID found in PR title"
             exit 0
           fi
+      - name: Debug PR title
+        run: |
+          echo "PR Title: ${{ github.event.pull_request.title }}"
+          echo "Branch: ${{ env.ISSUE_ID }}"
       - name: Update Linear Ticket Status
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_KEY }}
