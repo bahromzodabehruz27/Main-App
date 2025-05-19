@@ -117,7 +117,7 @@ jobs:
 
           echo "📡 Sending mutation to Linear..."
           UPDATE_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
-            -H "Authorization: $LINEAR_KEY" \
+            -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
             -d "$MUTATION")
 
