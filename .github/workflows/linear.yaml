@@ -85,17 +85,13 @@ jobs:
           echo "✅ Found TEAM_ID: $TEAM_ID ($TEAM_NAME)"
 
           echo "📡 Fetching workflow states for team: $TEAM_ID"
-          WORKFLOW_QUERY='{
-            workflowStates(teamId: "'"$TEAM_ID"'") {
-              id
-              name
-            }
-          }'
-
-          WORKFLOW_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
-            -H "Authorization: $LINEAR_KEY" \
+         WORKFLOW_QUERY=$(jq -nc --arg teamId "$TEAM_ID" \
+          '{ query: "query { workflowStates(teamId: \"" + $teamId + "\") { id name } }" }')
+  
+         WORKFLOW_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
+            -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "{\"query\": \"$WORKFLOW_QUERY\"}")
+            -d "$WORKFLOW_QUERY")
 
           echo "📥 Raw workflow state response:"
           echo "$WORKFLOW_RESPONSE" | jq .
