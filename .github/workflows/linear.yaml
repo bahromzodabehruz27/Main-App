@@ -1,44 +1,62 @@
-name: Update Linear Ticket
+name: Update Linear Ticket Status
 
 on:
   pull_request:
     types: [opened, reopened, closed]
-  push:
-      branches:
-        - main
 
 jobs:
   update-linear:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Extract PR Title
-        id: extract_title
-        run: echo "PR_TITLE=${{ github.event.pull_request.title }}" >> $GITHUB_ENV
-
-      - name: Parse Linear Issue ID
-        id: parse
+      - name: Extract Issue ID from PR title
+        id: extract_id
         run: |
+          echo "PR_TITLE=${{ github.event.pull_request.title }}" >> $GITHUB_ENV
           if [[ "${{ github.event.pull_request.title }}" =~ ([A-Z]+-[0-9]+) ]]; then
-            echo "Found Linear Issue ID: ${BASH_REMATCH[1]}"
             echo "ISSUE_ID=${BASH_REMATCH[1]}" >> $GITHUB_ENV
           else
-            echo "No Linear issue ID found"
+            echo "No Linear issue ID found in PR title"
+            exit 0
+
+      - name: Update Linear Ticket Status
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_KEY }}
+          ISSUE_ID: ${{ env.ISSUE_ID }}
+          PR_EVENT: ${{ github.event.action }}
+        run: |
+          if [ -z "$ISSUE_ID" ]; then
+            echo "No issue ID to update"
             exit 0
           fi
-        shell: bash
 
-      - name: Print Issue ID
-        run: echo "Issue ID is $ISSUE_ID"
-      - name: Query Issue from Linear
-        run: |
-            API_KEY="${{ secrets.LINEAR_API_KEY }}"
-            ISSUE_ID="MOBI-3935"
-            LINEAR_API_URL="https://api.linear.app/graphql"
-            
-            read -r -d '' GRAPHQL_QUERY <<EOF
-            {
-              "query": "query Issue { issue(id: \\\"$ISSUE_ID\\\") { id title description } }"
-            }
-     
-      
+          if [ "$PR_EVENT" == "opened" ] || [ "$PR_EVENT" == "reopened" ]; then
+            NEW_STATE="In Review"
+          elif [ "$PR_EVENT" == "closed" ]; then
+            NEW_STATE="Done"
+          else
+            echo "Unsupported event: $PR_EVENT"
+            exit 0
+          fi
+
+          # Get team ID and workflow states
+          RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
+            -H "Authorization: $LINEAR_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"query": "query { issue(id: \""'"$ISSUE_ID"'"\") { id team { id } } }"}')
+
+          TEAM_ID=$(echo "$RESPONSE" | jq -r '.data.issue.team.id')
+
+          # Get Workflow State ID
+          WORKFLOW_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
+            -H "Authorization: $LINEAR_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"query": "query { workflowStates(teamId: \"'"$TEAM_ID"'\") { id name } }"}')
+
+          STATE_ID=$(echo "$WORKFLOW_RESPONSE" | jq -r --arg name "$NEW_STATE" '.data.workflowStates[] | select(.name == $name) | .id')
+
+          # Update the issue
+          curl -s -X POST https://api.linear.app/graphql \
+            -H "Authorization: $LINEAR_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"query": "mutation { issueUpdate(id: \"'"$ISSUE_ID"'\" input: { stateId: \"'"$STATE_ID"'\" }) { success } }"}'
