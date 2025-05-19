@@ -30,16 +30,15 @@ jobs:
 
       - name: Print Issue ID
         run: echo "Issue ID is $ISSUE_ID"
-
-      - name: Update Linear Status
-        if: env.ISSUE_ID != ''
+      - name: Query Issue from Linear
         run: |
-          curl -X POST https://api.linear.app/graphql \
-            -H "Content-Type: application/json" \
-            -H "Authorization: ${{ secrets.LINEAR_KEY }}" \
-            -d '{
-              "query": "mutation { issueUpdate(input: { id: \"'$ISSUE_ID'\", stateId: \"'$STATE_ID'\" }) { success } }"
-            }'
-        env:
-          ISSUE_ID: ${{ env.ISSUE_ID }}
-          STATE_ID: your_state_id_here
+            API_KEY="${{ secrets.LINEAR_API_KEY }}"
+            ISSUE_ID="MOBI-3935"
+            LINEAR_API_URL="https://api.linear.app/graphql"
+            
+            read -r -d '' GRAPHQL_QUERY <<EOF
+            {
+              "query": "query Issue { issue(id: \\\"$ISSUE_ID\\\") { id title description } }"
+            }
+     
+      
