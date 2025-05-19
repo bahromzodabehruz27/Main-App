@@ -123,7 +123,6 @@ jobs:
 
           echo "📥 Update response:"
           echo "$UPDATE_RESPONSE" | jq .
-
           SUCCESS=$(echo "$UPDATE_RESPONSE" | jq -r '.data.issueUpdate.success')
           if [ "$SUCCESS" = "true" ]; then
             echo "✅ Issue status successfully updated"
