@@ -1,4 +1,5 @@
 name: Update Linear Ticket Status
+
 on:
   pull_request:
     types: [opened, reopened, closed]
@@ -8,24 +9,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Extract Issue ID from PR title
+      - name: Print raw branch and PR info
+        run: |
+          echo "HEAD_REF: ${{ github.head_ref }}"
+          echo "PR_TITLE: ${{ github.event.pull_request.title }}"
+          echo "EVENT: ${{ github.event.action }}"
+          echo "REF: ${{ github.ref }}"
+
+      - name: Extract ISSUE_ID from branch name
         id: extract_id
         run: |
-          echo "PR_TITLE=${{ github.event.pull_request.title }}" >> $GITHUB_ENV
-          if [[ "${{ github.event.pull_request.title }}" =~ ([A-Z]+-[0-9]+) ]]; then
-            echo "ISSUE_ID=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+          BRANCH_NAME="${{ github.head_ref }}"
+          echo "🔍 Extracting ISSUE_ID from branch: $BRANCH_NAME"
+
+          if [[ "$BRANCH_NAME" =~ ([A-Z]+-[0-9]+) ]]; then
+            ISSUE_ID="${BASH_REMATCH[1]}"
+            echo "✅ Found ISSUE_ID: $ISSUE_ID"
+            echo "ISSUE_ID=$ISSUE_ID" >> $GITHUB_ENV
           else
-            echo "No Linear issue ID found in PR title"
+            echo "❌ No ISSUE_ID found in branch name"
             exit 0
           fi
+
+      - name: Debug extracted values
+        run: |
+          echo "📦 ISSUE_ID: ${{ env.ISSUE_ID }}"
+          echo "📦 PR_EVENT: ${{ github.event.action }}"
+
       - name: Update Linear Ticket Status
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_KEY }}
           ISSUE_ID: ${{ env.ISSUE_ID }}
           PR_EVENT: ${{ github.event.action }}
         run: |
+          echo "🚀 Starting Linear update for $ISSUE_ID based on event $PR_EVENT"
+
           if [ -z "$ISSUE_ID" ]; then
-            echo "No issue ID to update"
+            echo "⚠️ ISSUE_ID is empty, exiting"
             exit 0
           fi
 
@@ -34,28 +54,88 @@ jobs:
           elif [ "$PR_EVENT" == "closed" ]; then
             NEW_STATE="Done"
           else
-            echo "Unsupported event: $PR_EVENT"
+            echo "⚠️ Unsupported PR event: $PR_EVENT"
             exit 0
           fi
 
-          # Get team ID and workflow states
+          echo "🔄 Setting new state: $NEW_STATE"
+
+          echo "📡 Sending GraphQL query to get internal issue ID"
+          QUERY='{
+            issue(key: "'"$ISSUE_ID"'") {
+              id
+              title
+              team { id name }
+            }
+          }'
+
           RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
-            -H "Authorization: $LINEAR_KEY" \
+            -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
-            -d '{"query": "query { issue(id: \""'"$ISSUE_ID"'"\") { id team { id } } }"}')
+            -d "{\"query\": \"$QUERY\"}")
 
+          echo "📥 Raw issue response:"
+          echo "$RESPONSE" | jq .
+
+          ISSUE_INTERNAL_ID=$(echo "$RESPONSE" | jq -r '.data.issue.id')
           TEAM_ID=$(echo "$RESPONSE" | jq -r '.data.issue.team.id')
+          TEAM_NAME=$(echo "$RESPONSE" | jq -r '.data.issue.team.name')
 
-          # Get Workflow State ID
+          if [ "$ISSUE_INTERNAL_ID" == "null" ]; then
+            echo "❌ Failed to extract internal issue ID. Full response:"
+            echo "$RESPONSE"
+            exit 1
+          fi
+
+          echo "✅ Found ISSUE_INTERNAL_ID: $ISSUE_INTERNAL_ID"
+          echo "✅ Found TEAM_ID: $TEAM_ID ($TEAM_NAME)"
+
+          echo "📡 Fetching workflow states for team: $TEAM_ID"
+          WORKFLOW_QUERY='{
+            workflowStates(teamId: "'"$TEAM_ID"'") {
+              id
+              name
+            }
+          }'
+
           WORKFLOW_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
-            -H "Authorization: $LINEAR_KEY" \
+            -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
-            -d '{"query": "query { workflowStates(teamId: \"'"$TEAM_ID"'\") { id name } }"}')
+            -d "{\"query\": \"$WORKFLOW_QUERY\"}")
+
+          echo "📥 Raw workflow state response:"
+          echo "$WORKFLOW_RESPONSE" | jq .
 
           STATE_ID=$(echo "$WORKFLOW_RESPONSE" | jq -r --arg name "$NEW_STATE" '.data.workflowStates[] | select(.name == $name) | .id')
 
-          # Update the issue
-          curl -s -X POST https://api.linear.app/graphql \
-            -H "Authorization: $LINEAR_KEY" \
+          if [ -z "$STATE_ID" ]; then
+            echo "❌ State \"$NEW_STATE\" not found in workflow states:"
+            echo "$WORKFLOW_RESPONSE" | jq '.data.workflowStates[] | {id, name}'
+            exit 1
+          fi
+
+          echo "✅ Found STATE_ID: $STATE_ID for state '$NEW_STATE'"
+
+          echo "📦 Preparing mutation to update issue state"
+          MUTATION=$(jq -nc --arg id "$ISSUE_INTERNAL_ID" --arg stateId "$STATE_ID" \
+            '{ query: "mutation { issueUpdate(id: \"" + $id + "\" input: { stateId: \"" + $stateId + "\" }) { success } }" }')
+
+          echo "🔧 Mutation payload:"
+          echo "$MUTATION" | jq .
+
+          echo "📡 Sending mutation to Linear..."
+          UPDATE_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
+            -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
-            -d '{"query": "mutation { issueUpdate(id: \"'"$ISSUE_ID"'\" input: { stateId: \"'"$STATE_ID"'\" }) { success } }"}'
+            -d "$MUTATION")
+
+          echo "📥 Update response:"
+          echo "$UPDATE_RESPONSE" | jq .
+
+          SUCCESS=$(echo "$UPDATE_RESPONSE" | jq -r '.data.issueUpdate.success')
+          if [ "$SUCCESS" = "true" ]; then
+            echo "✅ Issue status successfully updated"
+          else
+            echo "❌ Failed to update issue status"
+            exit 1
+          fi
