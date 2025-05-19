@@ -37,7 +37,7 @@ jobs:
 
       - name: Update Linear Ticket Status
         env:
-          LINEAR_API_KEY: ${{ secrets.LINEAR_KEY }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
           ISSUE_ID: ${{ env.ISSUE_ID }}
           PR_EVENT: ${{ github.event.action }}
         run: |
@@ -60,8 +60,9 @@ jobs:
           echo "🔄 Setting new state: $NEW_STATE"
 
           echo "📡 Sending GraphQL query to get internal issue ID"
-          QUERY=$(jq -n '{query: "query { issue(id: \"ALI-19\") { id title team { id name } } }"}')
-
+          QUERY="query { issue(id: \"$ISSUE_ID\") { id title team { id name } } }"
+          QUERY=$(jq -n --arg query "$QUERY" '{query: $query}')
+          
           RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
             -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
@@ -117,13 +118,12 @@ jobs:
 
           echo "📡 Sending mutation to Linear..."
           UPDATE_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
-            -H "Authorization: $LINEAR_KEY" \
+            -H "Authorization: $LINEAR_API_KEY" \
             -H "Content-Type: application/json" \
             -d "$MUTATION")
 
           echo "📥 Update response:"
           echo "$UPDATE_RESPONSE" | jq .
-
           SUCCESS=$(echo "$UPDATE_RESPONSE" | jq -r '.data.issueUpdate.success')
           if [ "$SUCCESS" = "true" ]; then
             echo "✅ Issue status successfully updated"
