@@ -154,23 +154,23 @@ jobs:
         run: |
           MESSAGE=""
           should_notify=false
-
+          
           if [ "$EVENT_NAME" == "pull_request" ] && [ "$ACTION" == "opened" ]; then
-            MESSAGE="🚀Pull Request Opened%0A👨‍💻Developer:\$SENDER\%0A 🔗[View PR](${PR_URL})" \
+            MESSAGE="🚀 *Pull Request Opened*\n👨‍💻 Developer \`$SENDER\`\n🔗 [View PR]($PR_URL)"
             should_notify=true
-
           elif [ "$EVENT_NAME" == "pull_request_review" ]; then
             if [ "$REVIEW_STATE" == "approved" ]; then
-              MESSAGE="✅ *Pull Request Approved*%0A👨‍💻 Developer \`$SENDER\`%0A🔗 [View PR](${PR_URL})"
+              MESSAGE="✅ *Pull Request Approved*\n👨‍💻 Developer \`$SENDER\`\n🔗 [View PR]($PR_URL)"
               should_notify=true
             elif [ "$REVIEW_STATE" == "changes_requested" ]; then
-              MESSAGE="❗ *Changes Requested*%0A👨‍💻 Developer \`$SENDER\`%0A🔗 [View PR](${PR_URL})"
+              MESSAGE="❗ *Changes Requested*\n👨‍💻 Developer \`$SENDER\`\n🔗 [View PR]($PR_URL)"
               should_notify=true
             fi
           fi
-
+          
           if [ "$should_notify" = true ]; then
-            ESCAPED_MESSAGE=$(echo "$MESSAGE" | sed -E 's/([][()_*\~`>#+=|{}.!-])/\\\1/g')
+            # Properly escape MarkdownV2 special characters
+            ESCAPED_MESSAGE=$(echo "$MESSAGE" | sed -E 's/([][_*[\]()~`>#+=|{}.!\\-])/\\\1/g')
             curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
               -d chat_id="$TELEGRAM_CHAT_ID" \
               -d parse_mode=MarkdownV2 \
