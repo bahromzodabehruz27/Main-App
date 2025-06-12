@@ -170,7 +170,7 @@ jobs:
           
           if [ "$should_notify" = true ]; then
             # Properly escape MarkdownV2 special characters
-            ESCAPED_MESSAGE=$(echo "$MESSAGE" | sed -E 's/([][_*[\]()~`>#+=|{}.!\\-])/\\\1/g')
+            ESCAPED_MESSAGE=$(echo "$MESSAGE" | sed -E 's/([][\(){}#+\-_.!`>~=|])/\\\1/g; s/\*/\\*/g; s/_/\\_/g')
             curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
               -d chat_id="$TELEGRAM_CHAT_ID" \
               -d parse_mode=MarkdownV2 \
