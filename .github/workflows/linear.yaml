@@ -174,7 +174,7 @@ jobs:
             curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
               -d chat_id="$TELEGRAM_CHAT_ID" \
               -d parse_mode=Markdown \
-              -d text="$MESSAGE"
+              -d text="$ESCAPED_MESSAGE"
           else
             echo "ℹ️ Not a relevant event for Telegram notification"
           fi
