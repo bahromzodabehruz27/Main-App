@@ -43,7 +43,6 @@ jobs:
           echo "versionCode=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "versionName=$VERSION_NAME" >> $GITHUB_OUTPUT
 
-
       - name: Build APK
         run: |
           ./gradlew assembleDebug\
