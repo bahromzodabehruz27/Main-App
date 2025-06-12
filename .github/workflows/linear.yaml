@@ -151,7 +151,9 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url || '' }}
           SENDER: ${{ github.actor }}
         run: |
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-                     -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-                     -d text="🔔 *PR Update \n\n 🧾 *Issue*: \`$ISSUE_ID\`\n\n 🛠 *State*: \`$STATE\`\n\n 👤 *Developer*: \`$SENDER\`\n\n 🔗 [View PR]($PR_URL) \n\n 🌿 *Branch*: \`$BRANCH\`" \
-                     -d parse_mode=Markdown
+         MESSAGE="🔔 *PR Update*\n\n🧾 *Issue*: \`$ISSUE_ID\`\n🛠 *State*: \`$STATE\`\n👤 *Developer*: \`$SENDER\`\n🔗 View PR: $PR_URL\n🌿 *Branch*: \`$BRANCH\`"
+        
+         curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
+          -d chat_id="$TELEGRAM_CHAT_ID" \
+          --data-urlencode "text=$MESSAGE" \
+          -d parse_mode=Markdown
