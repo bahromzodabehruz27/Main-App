@@ -49,15 +49,15 @@ jobs:
             STATE="In Progress"
           elif [ "${{ env.EVENT_NAME }}" == "pull_request" ]; then
             if [ "${{ env.ACTION }}" == "opened" ]; then
-              STATE="Code Review"
+              STATE="In Review"
             elif [ "${{ env.ACTION }}" == "closed" ] && [ "${{ env.IS_MERGED }}" == "true" ]; then
-              STATE="Ready To Test"
+              STATE="Done"
             fi
           elif [ "${{ env.EVENT_NAME }}" == "pull_request_review" ]; then
             if [ "${{ env.REVIEW_STATE }}" == "changes_requested" ]; then
               STATE="Rework"
             elif [ "${{ env.REVIEW_STATE }}" == "approved" ]; then
-              STATE="Ready Build"
+              STATE="Done"
             fi
           fi
           
