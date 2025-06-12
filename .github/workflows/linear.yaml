@@ -6,7 +6,6 @@ on:
     types: [ opened, reopened, synchronize,closed ]
   pull_request_review:
     types: [ submitted ]
-
 jobs:
   update-linear:
     runs-on: ubuntu-latest
@@ -57,7 +56,7 @@ jobs:
             if [ "${{ env.REVIEW_STATE }}" == "changes_requested" ]; then
               STATE="Rework"
             elif [ "${{ env.REVIEW_STATE }}" == "approved" ]; then
-              STATE="Done"
+              STATE="Ready Build"
             fi
           fi
           
@@ -140,20 +139,42 @@ jobs:
             echo "❌ Failed to update status"
             exit 1
           fi
+
       - name: Notify Telegram
         if: success()
         env:
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_TOKEN: ${{ secrets.UZ_TELEGRAM_BOT_ID }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          ISSUE_ID: ${{ env.ISSUE_ID }}
-          BRANCH: ${{ env.HEAD_REF }}
-          STATE: ${{ steps.state.outputs.NEW_STATE }}
-          PR_URL: ${{ github.event.pull_request.html_url || '' }}
+          EVENT_NAME: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          REVIEW_STATE: ${{ github.event.review.state }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
           SENDER: ${{ github.actor }}
         run: |
-         MESSAGE="🔔 *PR Update*\n\n🧾 *Issue*: \`$ISSUE_ID\`\n🛠 *State*: \`$STATE\`\n👤 *Developer*: \`$SENDER\`\n🔗 View PR: $PR_URL\n🌿 *Branch*: \`$BRANCH\`"
-        
-         curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
-          -d chat_id="$TELEGRAM_CHAT_ID" \
-          --data-urlencode "text=$MESSAGE" \
-          -d parse_mode=Markdown
+          MESSAGE=""
+          should_notify=false
+
+          if [ "$EVENT_NAME" == "pull_request" ] && [ "$ACTION" == "opened" ]; then
+            MESSAGE="🚀 *Pull Request Opened*%0A👨‍💻 Developer \`$SENDER\`%0A🔖 *${PR_TITLE}*%0A🔗 [View PR](${PR_URL})"
+            should_notify=true
+
+          elif [ "$EVENT_NAME" == "pull_request_review" ]; then
+            if [ "$REVIEW_STATE" == "approved" ]; then
+              MESSAGE="✅ *Pull Request Approved*%0A👨‍💻 Developer \`$SENDER\`%0A🔗 [View PR](${PR_URL})"
+              should_notify=true
+            elif [ "$REVIEW_STATE" == "changes_requested" ]; then
+              MESSAGE="❗ *Changes Requested*%0A👨‍💻 Developer \`$SENDER\`%0A🔗 [View PR](${PR_URL})"
+              should_notify=true
+            fi
+          fi
+
+          if [ "$should_notify" = true ]; then
+            ESCAPED_MESSAGE=$(echo "$MESSAGE" | sed -E 's/([][()_*\~`>#+=|{}.!-])/\\\1/g')
+            curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
+              -d chat_id="$TELEGRAM_CHAT_ID" \
+              -d parse_mode="MarkdownV2" \
+              --data-urlencode "text=$ESCAPED_MESSAGE"
+          else
+            echo "ℹ️ Not a relevant event for Telegram notification"
+          fi
