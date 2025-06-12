@@ -132,7 +132,6 @@ jobs:
             -d "$REQUEST")
 
           echo "$RESPONSE" | jq .
-
           SUCCESS=$(echo "$RESPONSE" | jq -r '.data.issueUpdate.success')
           if [ "$SUCCESS" == "true" ]; then
             echo "✅ Status updated to '${NEW_STATE}'"
