@@ -143,7 +143,7 @@ jobs:
       - name: Notify Telegram
         if: success()
         env:
-          TELEGRAM_TOKEN: ${{ secrets.UZ_TELEGRAM_BOT_ID }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_BOT_ID }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           EVENT_NAME: ${{ github.event_name }}
           ACTION: ${{ github.event.action }}
