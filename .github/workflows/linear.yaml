@@ -1,63 +1,66 @@
 name: Sync Linear Ticket Status
-
 on:
   push:
-    branches-ignore: [main]
+    branches-ignore: [ develop ]
   pull_request:
-    types: [opened, closed]
+    types: [ opened, reopened, synchronize,closed ]
   pull_request_review:
-    types: [submitted]
+    types: [ submitted ]
 
 jobs:
   update-linear:
     runs-on: ubuntu-latest
-
     steps:
       - name: Extract event data
         run: |
           echo "EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
           echo "ACTION=${{ github.event.action }}" >> $GITHUB_ENV
-          echo "HEAD_REF=${{ github.head_ref || github.ref_name }}" >> $GITHUB_ENV
           echo "IS_MERGED=${{ github.event.pull_request.merged || false }}" >> $GITHUB_ENV
           echo "REVIEW_STATE=${{ github.event.review.state || '' }}" >> $GITHUB_ENV
+          
+          # Universal branch extractor
+          if [[ "${{ github.event.pull_request.head.ref }}" != "" ]]; then
+          echo "HEAD_REF=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
+          elif [[ "${{ github.head_ref }}" != "" ]]; then
+          echo "HEAD_REF=${{ github.head_ref }}" >> $GITHUB_ENV
+          else
+          echo "HEAD_REF=${{ github.ref_name }}" >> $GITHUB_ENV
+          fi
 
       - name: Extract ISSUE_ID from branch name
         id: extract_id
         run: |
           BRANCH="${{ env.HEAD_REF }}"
           echo "🔍 Branch: $BRANCH"
-
-          if [[ "$BRANCH" =~ ([A-Z]+-[0-9]+) ]]; then
-            ISSUE_ID="${BASH_REMATCH[1]}"
-            echo "✅ Found ISSUE_ID: $ISSUE_ID"
-            echo "ISSUE_ID=$ISSUE_ID" >> $GITHUB_ENV
+          if [[ "$BRANCH" =~ ([A-Z0-9]+-[0-9]+) ]]; then
+          ISSUE_ID="${BASH_REMATCH[1]}"
+          echo "✅ Found ISSUE_ID: $ISSUE_ID"
+          echo "ISSUE_ID=$ISSUE_ID" >> $GITHUB_ENV
           else
-            echo "❌ No ISSUE_ID in branch"
-            exit 0
+          echo "❌ No ISSUE_ID in branch"
+          exit 0
           fi
-
       - name: Decide NEW_STATE
         id: state
         run: |
           STATE=""
-          case "${{ env.EVENT_NAME }}" in
-            "push")
-              STATE="In Progress"
-              ;;
-            "pull_request")
-              if [ "${{ env.ACTION }}" == "opened" ]; then
-                STATE="In Review"
-              elif [ "${{ env.ACTION }}" == "closed" ] && [ "${{ env.IS_MERGED }}" == "true" ]; then
-                STATE="Ready to Test"
-              fi
-              ;;
-            "pull_request_review")
-              if [ "${{ env.REVIEW_STATE }}" == "changes_requested" ]; then
-                STATE="In Rework"
-              fi
-              ;;
-          esac
 
+          if [ "${{ env.EVENT_NAME }}" == "push" ]; then
+            STATE="In Progress"
+          elif [ "${{ env.EVENT_NAME }}" == "pull_request" ]; then
+            if [ "${{ env.ACTION }}" == "opened" ]; then
+              STATE="Code Review"
+            elif [ "${{ env.ACTION }}" == "closed" ] && [ "${{ env.IS_MERGED }}" == "true" ]; then
+              STATE="Ready To Test"
+            fi
+          elif [ "${{ env.EVENT_NAME }}" == "pull_request_review" ]; then
+            if [ "${{ env.REVIEW_STATE }}" == "changes_requested" ]; then
+              STATE="Rework"
+            elif [ "${{ env.REVIEW_STATE }}" == "approved" ]; then
+              STATE="Ready Build"
+            fi
+          fi
+          
           if [ -z "$STATE" ]; then
             echo "ℹ️ No matching state to apply"
             exit 0
@@ -65,6 +68,7 @@ jobs:
 
           echo "🎯 Target Linear State: $STATE"
           echo "NEW_STATE=$STATE" >> $GITHUB_ENV
+          echo "::set-output name=NEW_STATE::$STATE"
 
       - name: Fetch internal Linear issue ID
         env:
@@ -136,3 +140,19 @@ jobs:
             echo "❌ Failed to update status"
             exit 1
           fi
+      - name: Notify Telegram
+        if: success()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_BOT_ID }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ISSUE_ID: ${{ env.ISSUE_ID }}
+          BRANCH: ${{ env.HEAD_REF }}
+          STATE: ${{ steps.state.outputs.NEW_STATE }}
+          PR_URL: ${{ github.event.pull_request.html_url || '' }}
+          SENDER: ${{ github.actor }}
+        run: |
+          TEXT="🔔 *PR Update \n\n 🧾 *Issue*: \`$ISSUE_ID\`\n\n 🛠 *State*: \`$STATE\`\n\n 👤 *Developer*: \`$SENDER\`\n\n 🔗 [View PR]($PR_URL) \n\n 🌿 *Branch*: \`$BRANCH\`"
+          curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
+            -d chat_id="$TELEGRAM_CHAT_ID" \
+            -d parse_mode="Markdown" \
+            -d text="$TEXT"
