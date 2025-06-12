@@ -1,9 +1,9 @@
 name: Sync Linear Ticket Status
 on:
   push:
-    branches-ignore: [ develop ]
+    branches: [ main ]
   pull_request:
-    types: [ opened, reopened, synchronize,closed ]
+    types: [ opened, reopened, synchronize,closed]
   pull_request_review:
     types: [ submitted ]
 jobs:
