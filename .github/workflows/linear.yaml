@@ -150,37 +150,37 @@ jobs:
           REVIEW_STATE: ${{ github.event.review.state }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           SENDER: ${{ github.actor }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           MESSAGE=""
           ICON=""
           should_notify=false
-          
+
           if [ "$EVENT_NAME" == "pull_request" ] && [ "$ACTION" == "opened" ]; then
             ICON="🚀"
-            MESSAGE="$ICON *Pull Request Opened*\n👨‍💻 Developer \`$SENDER\`\n🔗 [View PR]($PR_URL)"
+            MESSAGE="$ICON <b>Pull Request Opened</b>%0A👨‍💻 Developer: <code>$SENDER</code>%0A📌 <code>$PR_TITLE</code>%0A🔗 <a href=\"$PR_URL\">View PR</a>"
             should_notify=true
           elif [ "$EVENT_NAME" == "pull_request_review" ]; then
             if [ "$REVIEW_STATE" == "approved" ]; then
               ICON="✅"
-              MESSAGE="$ICON *Pull Request Approved*\n👨‍💻 Developer \`$SENDER\`\n🔗 [View PR]($PR_URL)"
+              MESSAGE="$ICON <b>Pull Request Approved</b>%0A👨‍💻 Developer: <code>$SENDER</code>%0A🔗 <a href=\"$PR_URL\">View PR</a>"
               should_notify=true
             elif [ "$REVIEW_STATE" == "changes_requested" ]; then
               ICON="❗"
-              MESSAGE="$ICON *Changes Requested*\n👨‍💻 Developer \`$SENDER\`\n🔗 [View PR]($PR_URL)"
+              MESSAGE="$ICON <b>Changes Requested</b>%0A👨‍💻 Developer: <code>$SENDER</code>%0A🔗 <a href=\"$PR_URL\">View PR</a>"
               should_notify=true
             fi
           elif [ "$EVENT_NAME" == "pull_request" ] && [ "$ACTION" == "closed" ] && [ "$IS_MERGED" == "true" ]; then
             ICON="🎉"
-            MESSAGE="$ICON *Pull Request Merged*\n👨‍💻 Developer \`$SENDER\`\n🔗 [View PR]($PR_URL)"
+            MESSAGE="$ICON <b>Pull Request Merged</b>%0A👨‍💻 Developer: <code>$SENDER</code>%0A🔗 <a href=\"$PR_URL\">View PR</a>"
             should_notify=true
           fi
-          
+
           if [ "$should_notify" = true ]; then
-            ESCAPED_MESSAGE=$(printf "%s" "$MESSAGE" | sed -E 's/([[\]()*_~`>#+=|{}.!\\-])/\\\1/g')
             curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
               -d chat_id="$TELEGRAM_CHAT_ID" \
-              -d parse_mode=MarkdownV2 \
-              -d text="$ESCAPED_MESSAGE"
+              -d parse_mode=HTML \
+              -d text="$MESSAGE"
           else
             echo "ℹ️ Not a relevant event for Telegram notification"
           fi
